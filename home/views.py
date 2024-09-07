@@ -1,15 +1,16 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, generics
 from .models import House, Apartment, Meter, MeterType, Tariff
 from .serializers import HouseSerializer, ApartmentSerializer, MeterSerializer, MeterTypeSerializer, HouseListSerializer
 
-class HouseListViewSet(viewsets.ModelViewSet):
+class HouseListViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = House.objects.all()
     serializer_class = HouseListSerializer
     http_method_names = ['get']
 
-class HouseViewSet(viewsets.ModelViewSet):
+class HouseDetailView(generics.RetrieveUpdateAPIView):
     queryset = House.objects.all()
     serializer_class = HouseSerializer
+    lookup_field = 'id'
 
 class ApartmentViewSet(viewsets.ModelViewSet):
     queryset = Apartment.objects.all()
