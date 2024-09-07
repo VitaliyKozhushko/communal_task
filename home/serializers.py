@@ -8,10 +8,18 @@ class MeterTypeSerializer(serializers.ModelSerializer):
 
 class MeterSerializer(serializers.ModelSerializer):
   meter_type = MeterTypeSerializer(read_only=True)
+  apartment = serializers.PrimaryKeyRelatedField(queryset=Apartment.objects.all())
 
   class Meta:
     model = Meter
-    fields = ['id', 'meter_number', 'meter_type', 'readings']
+    fields = ['id', 'meter_number', 'meter_type', 'readings', 'apartment']
+
+  def to_representation(self, instance):
+    representation = super().to_representation(instance)
+    request = self.context.get('request')
+    if request and request.method != 'POST':
+      representation.pop('apartment', None)
+    return representation
 
 class MeterByHouseSerializer(serializers.ModelSerializer):
   meter_type = serializers.PrimaryKeyRelatedField(queryset=MeterType.objects.all())
@@ -38,10 +46,18 @@ class MeterByHouseSerializer(serializers.ModelSerializer):
 
 class ApartmentSerializer(serializers.ModelSerializer):
     meters = MeterSerializer(many=True, read_only=True)
+    house = serializers.PrimaryKeyRelatedField(queryset=House.objects.all())
 
     class Meta:
       model = Apartment
-      fields = ['id', 'number', 'area', 'meters']
+      fields = ['id', 'house', 'number', 'area', 'meters']
+
+    def to_representation(self, instance):
+      representation = super().to_representation(instance)
+      request = self.context.get('request')
+      if request and request.method != 'POST':
+        representation.pop('house', None)
+      return representation
 
 
 class ApartmentWithHouseSerializer(serializers.ModelSerializer):
