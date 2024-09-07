@@ -42,7 +42,7 @@ class MeterType(models.Model):
   def __str__(self):
     return self.name
 
-class WaterMeter(models.Model):
+class Meter(models.Model):
   apartment = models.ForeignKey(Apartment, related_name='meters', on_delete=models.CASCADE)
   meter_number = models.CharField(max_length=50, verbose_name='Номер счётчика', default='Unknown')
   meter_type = models.ForeignKey(MeterType, related_name='meters', on_delete=models.PROTECT,
@@ -56,15 +56,14 @@ class WaterMeter(models.Model):
   def __str__(self):
     return f"Meter {self.id} in {self.apartment}"
 
-
 class UtilityBill(models.Model):
   apartment = models.ForeignKey(Apartment, related_name='bills', on_delete=models.CASCADE)
   month = models.DateField()
-  water_charge = models.DecimalField(max_digits=10, decimal_places=2)
+  charge = models.DecimalField(max_digits=10, decimal_places=2)
   maintenance_charge = models.DecimalField(max_digits=10, decimal_places=2)
 
   def total_charge(self):
-    return self.water_charge + self.maintenance_charge
+    return self.charge + self.maintenance_charge
 
   def __str__(self):
     return f"Bill for {self.apartment} for {self.month}"

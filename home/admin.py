@@ -1,15 +1,14 @@
 from django.contrib import admin
-from .models import House, Apartment, WaterMeter, MeterType
-from django import forms
+from .models import House, Apartment, Meter, MeterType, Tariff
 
-class WaterMeterInline(admin.TabularInline):
-  model = WaterMeter
+class MeterInline(admin.TabularInline):
+  model = Meter
   extra = 0
 
 class ApartmentInline(admin.TabularInline):
   model = Apartment
   extra = 0
-  inlines = [WaterMeterInline]
+  inlines = [MeterInline]
 
 @admin.register(House)
 class HouseAdmin(admin.ModelAdmin):
@@ -25,14 +24,14 @@ class ApartmentAdmin(admin.ModelAdmin):
   list_display = ['number', 'area', 'house']
   list_filter = ['house']
   ordering = ['house', 'area']
-  inlines = [WaterMeterInline]
+  inlines = [MeterInline]
 
   def changelist_view(self, request, extra_context=None):
     extra_context = {'title': 'Выберите квартиру чтобы изменить'}
     return super(ApartmentAdmin, self).changelist_view(request, extra_context=extra_context)
 
-@admin.register(WaterMeter)
-class WaterMeterAdmin(admin.ModelAdmin):
+@admin.register(Meter)
+class MeterAdmin(admin.ModelAdmin):
   list_display = ('id', 'meter_number', 'meter_type', 'readings', 'get_apartment_number', 'get_house')
   list_filter = ['apartment', 'apartment__house']
 
@@ -49,3 +48,7 @@ class WaterMeterAdmin(admin.ModelAdmin):
 @admin.register(MeterType)
 class MeterTypeAdmin(admin.ModelAdmin):
     list_display = ('name', 'unit')
+
+@admin.register(Tariff)
+class TariffAdmin(admin.ModelAdmin):
+  list_display = ('id', 'name', 'price_per_unit')
