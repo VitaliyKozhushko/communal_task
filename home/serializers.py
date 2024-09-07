@@ -13,6 +13,29 @@ class MeterSerializer(serializers.ModelSerializer):
     model = Meter
     fields = ['id', 'meter_number', 'meter_type', 'readings']
 
+class MeterByHouseSerializer(serializers.ModelSerializer):
+  meter_type = serializers.PrimaryKeyRelatedField(queryset=MeterType.objects.all())
+  apartment_id = serializers.SerializerMethodField()
+
+  class Meta:
+    model = Meter
+    fields = ['id', 'apartment_id', 'meter_number', 'meter_type', 'readings']
+
+  def get_apartment_id(self, obj):
+    return obj.apartment.id
+
+  def update(self, instance, validated_data):
+    meter_type = validated_data.pop('meter_type', None)
+
+    instance.meter_number = validated_data.get('meter_number', instance.meter_number)
+    instance.readings = validated_data.get('readings', instance.readings)
+
+    if meter_type:
+      instance.meter_type = meter_type
+
+    instance.save()
+    return instance
+
 class ApartmentSerializer(serializers.ModelSerializer):
     meters = MeterSerializer(many=True, read_only=True)
 
