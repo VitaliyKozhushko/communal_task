@@ -1,6 +1,6 @@
 from rest_framework import viewsets, generics
 from .models import House, Apartment, Meter, MeterType, Tariff
-from .serializers import HouseSerializer, ApartmentSerializer, MeterSerializer, MeterTypeSerializer, HouseListSerializer
+from .serializers import HouseSerializer, ApartmentWithHouseSerializer, MeterSerializer, MeterTypeSerializer, HouseListSerializer
 
 class HouseListViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = House.objects.all()
@@ -12,15 +12,10 @@ class HouseDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = HouseSerializer
     lookup_field = 'id'
 
-class ApartmentViewSet(viewsets.ModelViewSet):
+class ApartmentDetailView(generics.RetrieveUpdateAPIView):
     queryset = Apartment.objects.all()
-    serializer_class = ApartmentSerializer
-
-    def get_queryset(self):
-        house_id = self.request.query_params.get('house_id')
-        if house_id:
-            return self.queryset.filter(house_id=house_id)
-        return self.queryset
+    serializer_class = ApartmentWithHouseSerializer
+    lookup_field = 'id'
 
 class MeterViewSet(viewsets.ModelViewSet):
     queryset = Meter.objects.all()
@@ -35,5 +30,3 @@ class MeterViewSet(viewsets.ModelViewSet):
 class MeterTypeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = MeterType.objects.all()
     serializer_class = MeterTypeSerializer
-
-

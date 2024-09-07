@@ -14,11 +14,23 @@ class MeterSerializer(serializers.ModelSerializer):
     fields = ['id', 'meter_number', 'meter_type', 'readings']
 
 class ApartmentSerializer(serializers.ModelSerializer):
+    meters = MeterSerializer(many=True, read_only=True)
+
+    class Meta:
+      model = Apartment
+      fields = ['id', 'number', 'area', 'meters']
+
+
+class ApartmentWithHouseSerializer(serializers.ModelSerializer):
+  house_id = serializers.SerializerMethodField()
   meters = MeterSerializer(many=True, read_only=True)
 
   class Meta:
     model = Apartment
-    fields = ['id', 'number', 'area', 'meters']
+    fields = ['id', 'number', 'area', 'house_id', 'meters']
+
+  def get_house_id(self, obj):
+    return obj.house.id
 
 class HouseListSerializer(serializers.ModelSerializer):
   class Meta:
