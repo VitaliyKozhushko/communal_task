@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import House, Apartment, Meter, MeterType, Tariff
+from django import forms
 
 class MeterInline(admin.TabularInline):
   model = Meter
@@ -49,6 +50,52 @@ class MeterAdmin(admin.ModelAdmin):
 class MeterTypeAdmin(admin.ModelAdmin):
     list_display = ('name', 'unit')
 
-@admin.register(Tariff)
+
+class TariffForm(forms.ModelForm):
+  class Meta:
+    model = Tariff
+    fields = ['meter_type', 'custom_name', 'price_per_unit', 'unit']
+    widgets = {
+      'meter_type': forms.Select(attrs={'class': 'form-control'}),
+      'custom_name': forms.TextInput(attrs={'class': 'form-control'}),
+      'unit': forms.TextInput(attrs={'class': 'form-control'}),
+      'price_per_unit': forms.NumberInput(attrs={'class': 'form-control'}),
+    }
+
+  def clean(self):
+    cleaned_data = super().clean()
+    meter_type = cleaned_data.get('meter_type')
+    custom_name = cleaned_data.get('custom_name')
+    unit = cleaned_data.get('unit')
+
+    if not meter_type and not custom_name:
+      raise forms.ValidationError("Необходимо выбрать либо тип счетчика, либо ввести название.")
+
+    if meter_type and custom_name:
+      raise forms.ValidationError("Нельзя одновременно выбрать тип счётчика и название.")
+
+    if meter_type and unit:
+      raise forms.ValidationError("Нельзя вручную устанавливать единицу измерения, если выбран тип счетчика.")
+
+    if custom_name and not unit:
+      raise forms.ValidationError("Необходимо указать единицу измерения.")
+
+    if meter_type:
+      cleaned_data['unit'] = meter_type.unit
+
+    return cleaned_data
+
 class TariffAdmin(admin.ModelAdmin):
-  list_display = ('id', 'name', 'price_per_unit')
+  form = TariffForm
+  list_display = ('id', 'name', 'price_per_unit', 'unit')
+
+  def name(self, obj):
+    return obj.custom_name or obj.meter_type.name if obj.meter_type else 'No Name'
+
+  name.short_description = 'Название'
+
+  def changelist_view(self, request, extra_context=None):
+    extra_context = {'title': 'Выберите тариф чтобы изменить'}
+    return super(TariffAdmin, self).changelist_view(request, extra_context=extra_context)
+
+admin.site.register(Tariff, TariffAdmin)
