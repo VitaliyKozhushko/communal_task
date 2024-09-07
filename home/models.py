@@ -1,7 +1,11 @@
 from django.db import models
 
 class House(models.Model):
-    address = models.CharField(max_length=255, unique=True)
+    address = models.CharField(max_length=255, unique=True, verbose_name='Адрес')
+
+    class Meta:
+        verbose_name = 'Дом'
+        verbose_name_plural = 'Доступные дома'
 
     def __str__(self):
         return self.address
@@ -17,7 +21,12 @@ class Tariff(models.Model):
 
 class Apartment(models.Model):
     house = models.ForeignKey(House, related_name='apartments', on_delete=models.CASCADE)
+    number = models.IntegerField(default=None, blank=True, null=True)
     area = models.DecimalField(max_digits=7, decimal_places=2)
+
+    class Meta:
+      verbose_name = 'Квартира'
+      verbose_name_plural = 'Доступные квартиры'
 
     def __str__(self):
         return f"Apartment {self.id} in {self.house}"
