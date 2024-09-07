@@ -1,17 +1,29 @@
 from django.contrib import admin
 from .models import House, Apartment, Meter, MeterType, Tariff
 from django import forms
+from django.utils.html import format_html
+from django.urls import reverse
 
 class MeterInline(admin.TabularInline):
   model = Meter
   extra = 0
 
+
 class ApartmentInline(admin.TabularInline):
   model = Apartment
   extra = 0
-  inlines = [MeterInline]
+  readonly_fields = ['view_link']
+  fields = ['number', 'area', 'view_link']
 
-@admin.register(House)
+  def view_link(self, obj):
+    if obj.pk:
+      url = reverse('admin:%s_%s_change' % (obj._meta.app_label, obj._meta.model_name),
+                    args=[obj.pk])
+      return format_html('<a href="{}">{}</a>', url, obj.number)
+    return '-'
+
+  view_link.short_description = 'Ссылка'
+
 class HouseAdmin(admin.ModelAdmin):
   list_display = ('address',)
   inlines = [ApartmentInline]
@@ -99,3 +111,4 @@ class TariffAdmin(admin.ModelAdmin):
     return super(TariffAdmin, self).changelist_view(request, extra_context=extra_context)
 
 admin.site.register(Tariff, TariffAdmin)
+admin.site.register(House, HouseAdmin)
