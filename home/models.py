@@ -72,3 +72,16 @@ class Tariff(models.Model):
 
   def __str__(self):
     return f"{self.custom_name or self.meter_type.name}: {self.price_per_unit} per unit" if self.custom_name or self.meter_type else 'No Name'
+
+class CalculationProgress(models.Model):
+  house_id = models.IntegerField()
+  year = models.IntegerField()
+  month = models.IntegerField()
+  status = models.CharField(max_length=50,
+                            choices=[('в работе', 'In Progress'), ('готово', 'Completed'), ('ошибка', 'Error')],
+                            default='в работе')
+  error_message = models.TextField(blank=True, null=True)
+  created_at = models.DateTimeField(auto_now_add=True)
+
+  def __str__(self):
+    return f"Calculation for house {self.house_id} ({self.year}-{self.month}): {self.status}"

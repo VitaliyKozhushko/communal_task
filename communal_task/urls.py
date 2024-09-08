@@ -25,7 +25,8 @@ from home.views import (ApartmentDetailView,
                         MeterTypeViewSet,
                         HouseListViewSet,
                         HouseDetailView,
-                        MetersByHouseView)
+                        MetersByHouseView,
+                        TaskResultView)
 
 router = DefaultRouter()
 router.register(r'houses', HouseListViewSet)
@@ -41,4 +42,5 @@ urlpatterns = [
     path('api/apartment/<int:id>/', ApartmentDetailView.as_view(), name='apartment-detail'),
     path('api/meters/house/<int:house_id>/', MetersByHouseView.as_view(), name='meters-by-house'),
     path('api/meter/<int:id>/', MeterDetailView.as_view(), name='meter-detail'),
+    path('api/tasks/<str:task_id>/result/', TaskResultView.as_view(), name='task_status'),
 ]

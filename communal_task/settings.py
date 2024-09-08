@@ -49,7 +49,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_extensions',
     'home',
-    'rest_framework'
+    'rest_framework',
+    'django_celery_results'
 ]
 
 MIDDLEWARE = [
@@ -116,6 +117,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
