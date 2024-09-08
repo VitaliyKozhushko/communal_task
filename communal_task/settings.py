@@ -54,7 +54,8 @@ INSTALLED_APPS = [
     'django_extensions',
     'home',
     'rest_framework',
-    'django_celery_results'
+    'django_celery_results',
+    'drf_yasg'
 ]
 
 MIDDLEWARE = [
