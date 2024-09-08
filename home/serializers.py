@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import House, Apartment, Meter, MeterType, Tariff
+from rest_framework.exceptions import ValidationError
 
 class MeterTypeSerializer(serializers.ModelSerializer):
   class Meta:
@@ -34,9 +35,20 @@ class MeterByHouseSerializer(serializers.ModelSerializer):
 
   def update(self, instance, validated_data):
     meter_type = validated_data.pop('meter_type', None)
+    new_readings = validated_data.get('readings')
+
+    if new_readings is not None:
+      if len(new_readings) != 1:
+        raise ValidationError("Передаваться могут показания только за один месяц за раз.")
+
+      new_month, new_value = list(new_readings.items())[0]
+
+      if new_month in instance.readings:
+        raise ValidationError(f"Показания за {new_month} уже существуют.")
+
+      instance.readings[new_month] = new_value
 
     instance.meter_number = validated_data.get('meter_number', instance.meter_number)
-    instance.readings = validated_data.get('readings', instance.readings)
 
     if meter_type:
       instance.meter_type = meter_type
