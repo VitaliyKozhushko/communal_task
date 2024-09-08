@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import House, Apartment, Meter, MeterType, Tariff
 from rest_framework.exceptions import ValidationError
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 class MeterTypeSerializer(serializers.ModelSerializer):
   class Meta:
@@ -21,6 +23,27 @@ class MeterSerializer(serializers.ModelSerializer):
     if request and request.method != 'POST':
       representation.pop('apartment', None)
     return representation
+
+  def validate_readings(self, value):
+    if value:
+      if len(value) != 1:
+        raise serializers.ValidationError("Можно передать показания только за один месяц.")
+
+      current_month = datetime.now().strftime('%Y-%m')
+      previous_month = (datetime.now() - relativedelta(months=1)).strftime('%Y-%m')
+
+      for month, reading in value.items():
+        # Проверка на отрицательное значение
+        if float(reading) < 0:
+          raise serializers.ValidationError(f"Показания за {month} не могут быть отрицательными.")
+
+        # Проверка на месяц (текущий / предыдущий)
+        if month != current_month and month != previous_month:
+          raise serializers.ValidationError(
+            f"Показания могут быть только за текущий ({current_month}) или предыдущий месяц ({previous_month})."
+          )
+
+    return value
 
 class MeterByHouseSerializer(serializers.ModelSerializer):
   meter_type = serializers.PrimaryKeyRelatedField(queryset=MeterType.objects.all())
@@ -43,6 +66,25 @@ class MeterByHouseSerializer(serializers.ModelSerializer):
 
       new_month, new_value = list(new_readings.items())[0]
 
+      if float(new_value) < 0:
+        raise ValidationError("Показания не могут быть отрицательными.")
+
+      current_month = datetime.now().strftime('%Y-%m')
+      previous_month = (datetime.now() - relativedelta(months=1)).strftime('%Y-%m')
+
+      # Показаний нет, месяц текущий или предыдущий
+      if not instance.readings:
+        if new_month != current_month and new_month != previous_month:
+          raise ValidationError(
+            f"Показания могут быть только за текущий ({current_month}) или предыдущий месяц ({previous_month}).")
+      else:
+        # Показания есть, новый месяц не меньше самого раннего
+        earliest_month = min(instance.readings.keys())
+        if new_month < earliest_month:
+          raise ValidationError(
+            f"Новый месяц ({new_month}) не может быть меньше самого раннего ({earliest_month}) в существующих показаниях.")
+
+      # Наличие показаний за указанный месяц
       if new_month in instance.readings:
         raise ValidationError(f"Показания за {new_month} уже существуют.")
 
