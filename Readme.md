@@ -113,6 +113,7 @@
     ```
     {"2024-06": "150"}
     ```
+- автоматическое создание админа
 
 
 celery -A communal_task worker --loglevel=info
