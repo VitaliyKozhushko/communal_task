@@ -12,9 +12,9 @@ class House(models.Model):
     return self.address
 
 class Apartment(models.Model):
-  house = models.ForeignKey(House, related_name='apartments', on_delete=models.CASCADE)
-  number = models.IntegerField(default=None, blank=True, null=True)
-  area = models.DecimalField(max_digits=7, decimal_places=2, validators=[validate_area])
+  house = models.ForeignKey(House, related_name='apartments', on_delete=models.CASCADE, verbose_name='Дом')
+  number = models.IntegerField(default=None, blank=True, null=True, verbose_name='Номер квартиры')
+  area = models.DecimalField(max_digits=7, decimal_places=2, validators=[validate_area], verbose_name='Площадь')
 
   class Meta:
     verbose_name = 'Квартира'
@@ -36,7 +36,7 @@ class MeterType(models.Model):
 
 class Meter(models.Model):
   apartment = models.ForeignKey(Apartment, related_name='meters', on_delete=models.CASCADE)
-  meter_number = models.CharField(max_length=50, verbose_name='Номер счётчика', default='Unknown')
+  meter_number = models.CharField(max_length=50, verbose_name='Номер счётчика')
   meter_type = models.ForeignKey(MeterType, related_name='meters', on_delete=models.PROTECT,
                                  verbose_name='Тип счётчика', default=1)
   readings = models.JSONField(null=True, blank=True, verbose_name='Показания')
@@ -63,13 +63,16 @@ class UtilityBill(models.Model):
 class Tariff(models.Model):
   meter_type = models.ForeignKey(MeterType, null=True, blank=True, on_delete=models.SET_NULL, related_name='tariffs',
                                  verbose_name='Тип счётчика')
-  custom_name = models.CharField(max_length=100, blank=True, null=True, verbose_name='Название тарифа')
+  custom_name = models.CharField(max_length=100, blank=True, null=True, unique=True, verbose_name='Название тарифа')
   unit = models.CharField(max_length=50, blank=True, verbose_name='Единица измерения')
   price_per_unit = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Цена за единицу')
 
   class Meta:
     verbose_name = 'Тариф'
     verbose_name_plural = 'Тарифы'
+    constraints = [
+      models.UniqueConstraint(fields=['meter_type'], name='unique_meter_type_in_tariff')
+    ]
 
   def __str__(self):
     return f"{self.custom_name or self.meter_type.name}: {self.price_per_unit} per unit" if self.custom_name or self.meter_type else 'No Name'

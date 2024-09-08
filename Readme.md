@@ -114,6 +114,7 @@
     {"2024-06": "150"}
     ```
 - автоматическое создание админа
+- нельзя в
 
 
 celery -A communal_task worker --loglevel=info

@@ -80,19 +80,21 @@ class TariffForm(forms.ModelForm):
     custom_name = cleaned_data.get('custom_name')
     unit = cleaned_data.get('unit')
 
+    is_creating = self.instance.pk is None
+
     if not meter_type and not custom_name:
       raise forms.ValidationError("Необходимо выбрать либо тип счетчика, либо ввести название.")
 
     if meter_type and custom_name:
       raise forms.ValidationError("Нельзя одновременно выбрать тип счётчика и название.")
 
-    if meter_type and unit:
+    if meter_type and unit and is_creating:
       raise forms.ValidationError("Нельзя вручную устанавливать единицу измерения, если выбран тип счетчика.")
 
     if custom_name and not unit:
       raise forms.ValidationError("Необходимо указать единицу измерения.")
 
-    if meter_type:
+    if meter_type and is_creating:
       cleaned_data['unit'] = meter_type.unit
 
     return cleaned_data
