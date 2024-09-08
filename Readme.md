@@ -34,6 +34,7 @@
  - ++ api/apartment/<int:id>/редактирование квартиры
  - ++ api/meter/<int:id>/ редактирование счетчика
  - ++ api/meter-types получение типов счетчиков
+ - ++ 'api/house/<int:house_id>/calculate_bills/'расчет квартплаты для опр дома
 
 ### 3
 
