@@ -10,6 +10,8 @@ services:
       - POSTGRES_USER=${USER}
       - POSTGRES_PASSWORD=${PASSWD}
       - POSTGRES_DB=${DB}
+    networks:
+      - backend
 
   redis:
     image: redis:alpine
@@ -25,26 +27,31 @@ services:
   celery:
     build: .
     container_name: celery
-    command: celery -A myproject worker --loglevel=info
+    command: celery -A communal_task worker --loglevel=info
     volumes:
       - .:/app
     depends_on:
       - redis
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
+    env_file:
+      - .env.docker
     networks:
       - backend
+    restart: always
 
   celery_beat:
     build: .
     container_name: celery_beat
-    command: celery -A myproject beat --loglevel=info
+    command: celery -A communal_task beat --loglevel=info
     volumes:
       - .:/app
     depends_on:
       - redis
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
+    env_file:
+      - .env.docker
     networks:
       - backend
 
@@ -65,6 +72,8 @@ services:
       - ENVIRONMENT=docker
     env_file:
       - .env.docker
+    networks:
+      - backend
     depends_on:
       - db
       - redis
