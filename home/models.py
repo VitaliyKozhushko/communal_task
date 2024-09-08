@@ -12,9 +12,9 @@ class House(models.Model):
     return self.address
 
 class Apartment(models.Model):
-  house = models.ForeignKey(House, related_name='apartments', on_delete=models.CASCADE)
-  number = models.IntegerField(default=None, blank=True, null=True)
-  area = models.DecimalField(max_digits=7, decimal_places=2, validators=[validate_area])
+  house = models.ForeignKey(House, related_name='apartments', on_delete=models.CASCADE, verbose_name='Дом')
+  number = models.IntegerField(default=None, blank=True, null=True, verbose_name='Номер квартиры')
+  area = models.DecimalField(max_digits=7, decimal_places=2, validators=[validate_area], verbose_name='Площадь')
 
   class Meta:
     verbose_name = 'Квартира'
