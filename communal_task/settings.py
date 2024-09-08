@@ -19,10 +19,14 @@ env = environ.Env(
     DEBUG=(bool, False)
 )
 
+ENVIRONMENT = env('ENVIRONMENT', default='local')
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+if ENVIRONMENT == 'docker':
+    environ.Env.read_env(os.path.join(BASE_DIR, '.env.docker'))
+else:
+    environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -117,7 +121,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = f'redis://{env("REDIS_SERVER")}:6379/0'
 CELERY_RESULT_BACKEND = 'django-db'
 
 # Internationalization
