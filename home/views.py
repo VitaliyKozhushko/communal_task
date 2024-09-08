@@ -63,11 +63,9 @@ class MeterViewSet(viewsets.ModelViewSet):
 
 class UtilityBillCalculationView(APIView):
   def post(self, request, house_id):
-    """
-    POST: Запускает расчет квартплаты для дома (параметры `year` и `month` в теле запроса)
-    """
     year = request.data.get('year')
     month = request.data.get('month')
+    delay = request.data.get('delay', 0)
 
     if not all([year, month]):
       return Response({"error": "Необходимо указать год и месяц для расчета."}, status=status.HTTP_400_BAD_REQUEST)
@@ -75,12 +73,13 @@ class UtilityBillCalculationView(APIView):
     try:
       year = int(year)
       month = int(month)
+      delay = int(delay)
 
       house = House.objects.get(id=house_id)
       if not house:
         return Response({"error": "Указанного дома не существует"}, status=status.HTTP_400_BAD_REQUEST)
 
-      task = calculate_utility_bills_for_house_task.delay(house_id, year, month)
+      task = calculate_utility_bills_for_house_task.delay(house_id, year, month, delay)
 
       return Response({"task_id": task.id, 'status': 'Расчет квартплаты выполняется'}, status=status.HTTP_202_ACCEPTED)
     except House.DoesNotExist:
@@ -96,17 +95,17 @@ class TaskResultView(APIView):
     task_result = AsyncResult(task_id)
 
     if task_result.state == 'PENDING':
-      return Response({"status": "Задача в очереди на выполнение"}, status=status.HTTP_200_OK)
+      return Response({"status": "Расчет квартплаты в очереди на выполнение"}, status=status.HTTP_200_OK)
 
     elif task_result.state == 'STARTED':
-      return Response({"status": "Задача в процессе выполнения"}, status=status.HTTP_200_OK)
+      return Response({"status": "Расчет квартплаты выполняется"}, status=status.HTTP_200_OK)
 
     elif task_result.state == 'SUCCESS':
       result = task_result.result
-      return Response({"status": "Задача выполнена", "data": result}, status=status.HTTP_200_OK)
+      return Response({"status": "Расчет квартплаты выполнен", "data": result}, status=status.HTTP_200_OK)
 
     elif task_result.state == 'FAILURE':
-      return Response({"status": "Ошибка выполнения задачи", "error": str(task_result.result)},
+      return Response({"status": "Ошибка выполнения расчета квартплаты", "error": str(task_result.result)},
                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    return Response({"status": "Неизвестное состояние задачи"}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({"status": "Неизвестное состояние расчета квартплаты"}, status=status.HTTP_400_BAD_REQUEST)
