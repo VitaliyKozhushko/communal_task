@@ -1,4 +1,5 @@
 from django.db import models
+from .validators import validate_area
 
 class House(models.Model):
   address = models.CharField(max_length=255, unique=True, verbose_name='Адрес')
@@ -13,7 +14,7 @@ class House(models.Model):
 class Apartment(models.Model):
   house = models.ForeignKey(House, related_name='apartments', on_delete=models.CASCADE)
   number = models.IntegerField(default=None, blank=True, null=True)
-  area = models.DecimalField(max_digits=7, decimal_places=2)
+  area = models.DecimalField(max_digits=7, decimal_places=2, validators=[validate_area])
 
   class Meta:
     verbose_name = 'Квартира'
