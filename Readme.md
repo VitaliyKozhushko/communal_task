@@ -1,3 +1,25 @@
+## Инструкция по запуску проекта
+
+1. Клонируйте репозиторий
+```
+git clone https://github.com/VitaliyKozhushko/communal_task
+```
+2. Настройте .env файлы: .env - обычный запуск, .env.docker - запуск с помощью Docker.
+3. Запустите проект:
+   * (суперпользователь будет автоматически создан - login: admin, password - admin)
+   - либо с помощью команд Django:
+   ```
+    python manage.py collectstatic
+    python manage.py makemigrations
+    python manage.py migrate
+    python create_superuser.py
+    python manage.py runserver
+    ```
+   - либо с помощью Docker
+    ```
+    docker compose up --build -d
+    ```
+
 ## Примечания
 ### 1
 - в карточке дома можно посмотреть список квартир, относящихся к дому и сразу перейти в нужную
