@@ -1,7 +1,7 @@
 from rest_framework import viewsets, generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import House, Apartment, Meter, MeterType, Tariff
+from .models import House, Apartment, Meter, MeterType, CalculationProgress
 from .serializers import (HouseSerializer,
                           ApartmentSerializer,
                           ApartmentWithHouseSerializer,
@@ -9,7 +9,8 @@ from .serializers import (HouseSerializer,
                           MeterSerializer,
                           MeterTypeSerializer,
                           HouseListSerializer)
-from .services.calc_tarif import calculate_utility_bills_for_house
+from celery.result import AsyncResult
+from .celery_tasks import calculate_utility_bills_for_house_task
 
 class HouseListViewSet(viewsets.ModelViewSet):
   queryset = House.objects.all()
@@ -79,12 +80,33 @@ class UtilityBillCalculationView(APIView):
       if not house:
         return Response({"error": "Указанного дома не существует"}, status=status.HTTP_400_BAD_REQUEST)
 
-      result = calculate_utility_bills_for_house(house_id, year, month)
+      task = calculate_utility_bills_for_house_task.delay(house_id, year, month)
 
-      return Response(result, status=status.HTTP_200_OK)
+      return Response({"task_id": task.id, 'status': 'Расчет квартплаты выполняется'}, status=status.HTTP_202_ACCEPTED)
     except House.DoesNotExist:
       return Response({"error": "Дом не найден."}, status=status.HTTP_404_NOT_FOUND)
     except ValueError:
       return Response({"error": "Некорректный формат года или месяца."}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
       return Response({"error": f"Произошла ошибка: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class TaskResultView(APIView):
+  def get(self, request, task_id):
+    task_result = AsyncResult(task_id)
+
+    if task_result.state == 'PENDING':
+      return Response({"status": "Задача в очереди на выполнение"}, status=status.HTTP_200_OK)
+
+    elif task_result.state == 'STARTED':
+      return Response({"status": "Задача в процессе выполнения"}, status=status.HTTP_200_OK)
+
+    elif task_result.state == 'SUCCESS':
+      result = task_result.result
+      return Response({"status": "Задача выполнена", "data": result}, status=status.HTTP_200_OK)
+
+    elif task_result.state == 'FAILURE':
+      return Response({"status": "Ошибка выполнения задачи", "error": str(task_result.result)},
+                      status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    return Response({"status": "Неизвестное состояние задачи"}, status=status.HTTP_400_BAD_REQUEST)
