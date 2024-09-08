@@ -17,7 +17,15 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from home.views import ApartmentDetailView, ApartmentCreateView, MeterDetailView, MeterViewSet, MeterTypeViewSet, HouseListViewSet, HouseDetailView, MetersByHouseView
+from home.views import (ApartmentDetailView,
+                        UtilityBillCalculationView,
+                        ApartmentCreateView,
+                        MeterDetailView,
+                        MeterViewSet,
+                        MeterTypeViewSet,
+                        HouseListViewSet,
+                        HouseDetailView,
+                        MetersByHouseView)
 
 router = DefaultRouter()
 router.register(r'houses', HouseListViewSet)
@@ -28,8 +36,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api/house/<int:id>/', HouseDetailView.as_view(), name = 'house-detail'),
+    path('api/house/<int:house_id>/calculate_bills/', UtilityBillCalculationView.as_view(), name='calculate_bills'),
     path('api/apartments/', ApartmentCreateView.as_view(), name='apartment-create'),
     path('api/apartment/<int:id>/', ApartmentDetailView.as_view(), name='apartment-detail'),
     path('api/meters/house/<int:house_id>/', MetersByHouseView.as_view(), name='meters-by-house'),
-    path('api/meter/<int:id>/', MeterDetailView.as_view(), name='meter-detail')
+    path('api/meter/<int:id>/', MeterDetailView.as_view(), name='meter-detail'),
 ]

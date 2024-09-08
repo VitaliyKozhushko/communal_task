@@ -1,6 +1,15 @@
-from rest_framework import viewsets, generics
+from rest_framework import viewsets, generics, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from .models import House, Apartment, Meter, MeterType, Tariff
-from .serializers import HouseSerializer, ApartmentSerializer, ApartmentWithHouseSerializer, MeterByHouseSerializer, MeterSerializer, MeterTypeSerializer, HouseListSerializer
+from .serializers import (HouseSerializer,
+                          ApartmentSerializer,
+                          ApartmentWithHouseSerializer,
+                          MeterByHouseSerializer,
+                          MeterSerializer,
+                          MeterTypeSerializer,
+                          HouseListSerializer)
+from .services.calc_tarif import calculate_utility_bills_for_house
 
 class HouseListViewSet(viewsets.ModelViewSet):
   queryset = House.objects.all()
@@ -50,3 +59,32 @@ class MeterDetailView(generics.RetrieveUpdateAPIView):
 class MeterViewSet(viewsets.ModelViewSet):
   queryset = Meter.objects.all()
   serializer_class = MeterSerializer
+
+class UtilityBillCalculationView(APIView):
+  def post(self, request, house_id):
+    """
+    POST: Запускает расчет квартплаты для дома (параметры `year` и `month` в теле запроса)
+    """
+    year = request.data.get('year')
+    month = request.data.get('month')
+
+    if not all([year, month]):
+      return Response({"error": "Необходимо указать год и месяц для расчета."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+      year = int(year)
+      month = int(month)
+
+      house = House.objects.get(id=house_id)
+      if not house:
+        return Response({"error": "Указанного дома не существует"}, status=status.HTTP_400_BAD_REQUEST)
+
+      result = calculate_utility_bills_for_house(house_id, year, month)
+
+      return Response(result, status=status.HTTP_200_OK)
+    except House.DoesNotExist:
+      return Response({"error": "Дом не найден."}, status=status.HTTP_404_NOT_FOUND)
+    except ValueError:
+      return Response({"error": "Некорректный формат года или месяца."}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+      return Response({"error": f"Произошла ошибка: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
