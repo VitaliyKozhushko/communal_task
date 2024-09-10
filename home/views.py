@@ -1,4 +1,4 @@
-from rest_framework import viewsets, generics, status
+from rest_framework import viewsets, generics, status, mixins
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import House, Apartment, Meter, MeterType
@@ -14,12 +14,16 @@ from .celery_tasks import calculate_utility_bills_for_house_task
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-class HouseListViewSet(viewsets.ModelViewSet):
+class HouseListViewSet(mixins.ListModelMixin,
+                       mixins.CreateModelMixin,
+                       viewsets.GenericViewSet):
   queryset = House.objects.all()
   serializer_class = HouseListSerializer
+  http_method_names = ['get', 'post']
 
   @swagger_auto_schema(
     operation_description='Получить список домов',
+    operation_summary='Список домов',
     tags=['Управление домом'],
     responses={200: HouseListSerializer(many=True)},
   )
@@ -31,6 +35,7 @@ class HouseListViewSet(viewsets.ModelViewSet):
 
   @swagger_auto_schema(
     operation_description='Создать новый дом',
+    operation_summary='Дбавление дома',
     tags=['Управление домом'],
     request_body=HouseListSerializer,
     responses={201: HouseListSerializer}
@@ -48,41 +53,32 @@ class HouseDetailView(generics.RetrieveUpdateAPIView):
   )
   serializer_class = HouseSerializer
   lookup_field = 'id'
+  http_method_names = ['get', 'put']
 
   @swagger_auto_schema(
     operation_description='Получить детали дома с его квартирами и счётчиками',
+    operation_summary='Данные по дому (квартиры, счетчики)',
     tags=['Управление домом'],
     responses={200: HouseSerializer}
   )
   def get(self, request, *args, **kwargs):
     """
-    Возвращает детали конкретного дома, включая связанные квартиры и счётчики.
+    Возвращает детали дома, включая связанные квартиры и счётчики.
     """
     return super().get(request, *args, **kwargs)
 
   @swagger_auto_schema(
     operation_description='Обновить детали дома',
+    operation_summary='Редактирование дома',
     tags=['Управление домом'],
     request_body=HouseSerializer,
     responses={200: HouseSerializer}
   )
   def put(self, request, *args, **kwargs):
     """
-    Обновляет информацию о доме, включая привязанные квартиры.
+    Обновляет информацию о доме
     """
     return super().put(request, *args, **kwargs)
-
-  @swagger_auto_schema(
-    operation_description='Частично обновить данные дома',
-    tags=['Управление домом'],
-    request_body=HouseSerializer,
-    responses={200: HouseSerializer}
-  )
-  def patch(self, request, *args, **kwargs):
-    """
-    Частичное обновление информации о доме.
-    """
-    return super().patch(request, *args, **kwargs)
 
 class ApartmentCreateView(generics.CreateAPIView):
   queryset = Apartment.objects.all()
@@ -90,6 +86,7 @@ class ApartmentCreateView(generics.CreateAPIView):
 
   @swagger_auto_schema(
     operation_description='Создать новую квартиру',
+    operation_summary='Добавление квартиры',
     tags=['Управление квартирой'],
     request_body=ApartmentSerializer,
     responses={201: ApartmentSerializer}
@@ -104,20 +101,23 @@ class ApartmentDetailView(generics.RetrieveUpdateAPIView):
   queryset = Apartment.objects.all()
   serializer_class = ApartmentWithHouseSerializer
   lookup_field = 'id'
+  http_method_names = ['get', 'put']
 
   @swagger_auto_schema(
     operation_description='Получить информацию о квартире с деталями счётчиков и ID дома',
+    operation_summary='Данные по квартире (счетчики, дом)',
     tags=['Управление квартирой'],
     responses={200: ApartmentWithHouseSerializer}
   )
   def get(self, request, *args, **kwargs):
     """
-    Возвращает детали конкретной квартиры, включая ID дома и список счётчиков.
+    Возвращает детали квартиры, включая ID дома и список счётчиков.
     """
     return super().get(request, *args, **kwargs)
 
   @swagger_auto_schema(
     operation_description='Обновить данные о квартире',
+    operation_summary='Редактирование квартиры',
     tags=['Управление квартирой'],
     request_body=ApartmentWithHouseSerializer,
     responses={200: ApartmentWithHouseSerializer}
@@ -128,24 +128,13 @@ class ApartmentDetailView(generics.RetrieveUpdateAPIView):
     """
     return super().put(request, *args, **kwargs)
 
-  @swagger_auto_schema(
-    operation_description='Частично обновить данные о квартире',
-    tags=['Управление квартирой'],
-    request_body=ApartmentWithHouseSerializer,
-    responses={200: ApartmentWithHouseSerializer}
-  )
-  def patch(self, request, *args, **kwargs):
-    """
-    Частично обновляет информацию о квартире.
-    """
-    return super().patch(request, *args, **kwargs)
-
 class MeterTypeViewSet(viewsets.ReadOnlyModelViewSet):
   queryset = MeterType.objects.all()
   serializer_class = MeterTypeSerializer
 
   @swagger_auto_schema(
     operation_description='Получить список всех типов счётчиков',
+    operation_summary='Список типов счётчика',
     tags=['Управление счётчиками'],
     responses={200: MeterTypeSerializer(many=True)}
   )
@@ -156,13 +145,14 @@ class MeterTypeViewSet(viewsets.ReadOnlyModelViewSet):
     return super().list(request, *args, **kwargs)
 
   @swagger_auto_schema(
-    operation_description='Получить данные конкретного типа счётчика',
+    operation_description='Получить данные типа счётчика',
+    operation_summary='Данные по типу счётчика',
     tags=['Управление счётчиками'],
     responses={200: MeterTypeSerializer}
   )
   def retrieve(self, request, *args, **kwargs):
     """
-    Возвращает данные конкретного типа счётчика по ID.
+    Возвращает данные типа счётчика по ID.
     """
     return super().retrieve(request, *args, **kwargs)
 
@@ -181,7 +171,8 @@ class MetersByHouseView(generics.ListAPIView):
     return queryset
 
   @swagger_auto_schema(
-    operation_description='Получить список счётчиков для конкретного дома. Можно отфильтровать по квартире.',
+    operation_description='Получить список счётчиков для дома. Можно отфильтровать по квартире.',
+    operation_summary='Список счётчиков по дому (фильтрация по квартире)',
     tags=['Управление счётчиками'],
     manual_parameters=[
       openapi.Parameter(
@@ -205,20 +196,23 @@ class MeterDetailView(generics.RetrieveUpdateAPIView):
     queryset = Meter.objects.all()
     serializer_class = MeterByHouseSerializer
     lookup_field = 'id'
+    http_method_names = ['get', 'put']
 
     @swagger_auto_schema(
-      operation_description='Получить информацию о конкретном счётчике',
+      operation_description='Получить информацию о счётчике',
+      operation_summary='Данные по счётчику',
       tags=['Управление счётчиками'],
       responses={200: MeterByHouseSerializer}
     )
     def get(self, request, *args, **kwargs):
       """
-      Возвращает детали конкретного счётчика по его ID.
+      Возвращает детали счётчика по его ID.
       """
       return super().get(request, *args, **kwargs)
 
     @swagger_auto_schema(
-      operation_description='Обновить данные конкретного счётчика',
+      operation_description='Обновить данные счётчика',
+      operation_summary='Редактирование счётчика',
       tags=['Управление счётчиками'],
       request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
@@ -286,24 +280,16 @@ class MeterDetailView(generics.RetrieveUpdateAPIView):
       """
       return super().put(request, *args, **kwargs)
 
-    @swagger_auto_schema(
-      operation_description='Частично обновить данные конкретного счётчика',
-      tags=['Управление счётчиками'],
-      request_body=MeterByHouseSerializer,
-      responses={200: MeterByHouseSerializer}
-    )
-    def patch(self, request, *args, **kwargs):
-      """
-      Частично обновляет информацию о счётчике.
-      """
-      return super().patch(request, *args, **kwargs)
-
-class MeterViewSet(viewsets.ModelViewSet):
+class MeterViewSet(mixins.ListModelMixin,
+                   mixins.CreateModelMixin,
+                   viewsets.GenericViewSet):
   queryset = Meter.objects.all()
   serializer_class = MeterSerializer
+  http_method_names = ['get', 'post']
 
   @swagger_auto_schema(
     operation_description='Получить список всех счётчиков',
+    operation_summary='Список счётчиков',
     tags=['Управление счётчиками'],
     responses={200: MeterSerializer(many=True)}
   )
@@ -314,18 +300,8 @@ class MeterViewSet(viewsets.ModelViewSet):
     return super().list(request, *args, **kwargs)
 
   @swagger_auto_schema(
-    operation_description='Получить данные конкретного счётчика',
-    tags=['Управление счётчиками'],
-    responses={200: MeterSerializer}
-  )
-  def retrieve(self, request, *args, **kwargs):
-    """
-    Возвращает информацию о конкретном счётчике по его ID.
-    """
-    return super().retrieve(request, *args, **kwargs)
-
-  @swagger_auto_schema(
     operation_description='Создать новый счётчик',
+    operation_summary='Добавление счётчика',
     tags=['Управление счётчиками'],
     request_body=MeterSerializer,
     responses={201: MeterSerializer}
@@ -336,33 +312,10 @@ class MeterViewSet(viewsets.ModelViewSet):
     """
     return super().create(request, *args, **kwargs)
 
-  @swagger_auto_schema(
-    operation_description='Обновить данные счётчика',
-    tags=['Управление счётчиками'],
-    request_body=MeterSerializer,
-    responses={200: MeterSerializer}
-  )
-  def update(self, request, *args, **kwargs):
-    """
-    Обновляет информацию о счётчике.
-    """
-    return super().update(request, *args, **kwargs)
-
-  @swagger_auto_schema(
-    operation_description='Частично обновить данные счётчика',
-    tags=['Управление счётчиками'],
-    request_body=MeterSerializer,
-    responses={200: MeterSerializer}
-  )
-  def partial_update(self, request, *args, **kwargs):
-    """
-    Частично обновляет информацию о счётчике.
-    """
-    return super().partial_update(request, *args, **kwargs)
-
 class UtilityBillCalculationView(APIView):
   @swagger_auto_schema(
     operation_description='Запуск задачи расчета квитанций за коммунальные услуги для указанного дома',
+    operation_summary='Запуск расчета квитанции',
     tags=['Расчет ком. услуг'],
     request_body=openapi.Schema(
       type=openapi.TYPE_OBJECT,
@@ -424,6 +377,7 @@ class UtilityBillCalculationView(APIView):
 class TaskResultView(APIView):
   @swagger_auto_schema(
     operation_description='Получить статус выполнения задачи расчета квартплаты',
+    operation_summary='Получение готовой квитанции',
     tags=['Расчет ком. услуг'],
     manual_parameters=[
       openapi.Parameter(
