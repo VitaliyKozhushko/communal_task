@@ -33,11 +33,11 @@ from drf_yasg import openapi
 
 schema_view = get_schema_view(
    openapi.Info(
-      title="Your API",
+      title="API communal task",
       default_version='v1',
       description="API documentation",
       terms_of_service="https://www.google.com/policies/terms/",
-      contact=openapi.Contact(email="contact@yourapi.com"),
+      contact=openapi.Contact(email="admin@admin.com"),
       license=openapi.License(name="BSD License"),
    ),
    public=True,
